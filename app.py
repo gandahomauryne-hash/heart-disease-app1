@@ -7,11 +7,10 @@ st.set_page_config(page_title="Cancer Classifier", page_icon="🔬", layout="wid
 @st.cache_resource
 def load_model():
     model = joblib.load("heart_model.pkl")
-    scaler = joblib.load("scaler.pkl")
-    return model, scaler
+    return model
 
 try:
-    model, scaler = load_model()
+    model = load_model()
     model_loaded = True
 except Exception as e:
     model_loaded = False
@@ -76,12 +75,11 @@ for group_name, group_features in groups.items():
 
 input_ordered = [v for _,v in sorted(input_values)]
 X_input = np.array(input_ordered).reshape(1,-1)
-X_scaled = scaler.transform(X_input)
 
 st.divider()
 if st.button("🔍 Prédire", type="primary"):
-    prediction = model.predict(X_scaled)[0]
-    proba = model.predict_proba(X_scaled)[0]
+    prediction = model.predict(X_input)[0]
+    proba = model.predict_proba(X_input)[0]
     col1, col2, col3 = st.columns(3)
     if prediction == 1:
         col1.success("## ✅ BÉNIN")
