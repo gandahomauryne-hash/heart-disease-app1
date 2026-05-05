@@ -50,28 +50,34 @@ with st.sidebar:
     mode = st.radio("Mode", ["Exemple prédéfini", "Saisie manuelle"])
     if mode == "Exemple prédéfini":
         example = st.radio("Choisir", ["Patient bénin", "Patient malin"])
-        defaults = EXAMPLE_BENIGN if example == "Patient bénin" else EXAMPLE_MALIGNANT
-        st.info(f"{'🟢' if example == 'Patient bénin' else '🔴'} Valeurs chargées : **{example}**")
+        if example == "Patient bénin":
+            defaults = EXAMPLE_BENIGN
+            st.success("🟢 Patient bénin chargé")
+        else:
+            defaults = EXAMPLE_MALIGNANT
+            st.error("🔴 Patient malin chargé")
     else:
         defaults = [0.0] * 30
 
+# Prédiction directe sans number_input
+X_input = np.array(defaults).reshape(1, -1)
+
+# Affichage des valeurs en tableau
+st.subheader("📋 Valeurs des features")
 groups = {
     "🔵 Moyennes (mean)": (FEATURE_NAMES[:10], defaults[:10]),
     "🟡 Erreurs standard (SE)": (FEATURE_NAMES[10:20], defaults[10:20]),
     "🔴 Pires valeurs (worst)": (FEATURE_NAMES[20:30], defaults[20:30]),
 }
 
-input_values = []
 for group_name, (group_features, group_defaults) in groups.items():
     with st.expander(group_name, expanded=(group_name == "🔵 Moyennes (mean)")):
-        cols = st.columns(2)
-        for j, (feat, default_val) in enumerate(zip(group_features, group_defaults)):
-            val = cols[j % 2].number_input(
-                feat, value=float(default_val), format="%.5f", key=f"f_{feat}"
-            )
-            input_values.append(val)
-
-X_input = np.array(input_values).reshape(1, -1)
+        col1, col2 = st.columns(2)
+        for j, (feat, val) in enumerate(zip(group_features, group_defaults)):
+            if j % 2 == 0:
+                col1.metric(feat, f"{val:.5f}")
+            else:
+                col2.metric(feat, f"{val:.5f}")
 
 st.divider()
 if st.button("🔍 Prédire", type="primary"):
