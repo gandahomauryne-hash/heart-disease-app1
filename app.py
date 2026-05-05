@@ -6,8 +6,7 @@ st.set_page_config(page_title="Cancer Classifier", page_icon="🔬", layout="wid
 
 @st.cache_resource
 def load_model():
-    model = joblib.load("heart_model.pkl")
-    return model
+    return joblib.load("heart_model.pkl")
 
 try:
     model = load_model()
@@ -20,7 +19,6 @@ st.title("🔬 Classificateur de Tumeurs Mammaires")
 st.markdown("""
 **Modèle :** Régression Logistique | **Accuracy** 98.25% | **ROC-AUC** 0.9954  
 **Dataset :** Breast Cancer Wisconsin  
-Entrez les caractéristiques cellulaires pour obtenir une prédiction.
 """)
 st.divider()
 
@@ -51,30 +49,29 @@ with st.sidebar:
     st.header("⚙️ Options")
     mode = st.radio("Mode", ["Exemple prédéfini", "Saisie manuelle"])
     if mode == "Exemple prédéfini":
-        example = st.selectbox("Choisir", ["Patient bénin","Patient malin"])
+        example = st.radio("Choisir", ["Patient bénin", "Patient malin"])
+        defaults = EXAMPLE_BENIGN if example == "Patient bénin" else EXAMPLE_MALIGNANT
+        st.info(f"{'🟢' if example == 'Patient bénin' else '🔴'} Valeurs chargées : **{example}**")
+    else:
+        defaults = [0.0] * 30
 
 groups = {
-    "🔵 Moyennes (mean)": FEATURE_NAMES[:10],
-    "🟡 Erreurs standard (SE)": FEATURE_NAMES[10:20],
-    "🔴 Pires valeurs (worst)": FEATURE_NAMES[20:30],
+    "🔵 Moyennes (mean)": (FEATURE_NAMES[:10], defaults[:10]),
+    "🟡 Erreurs standard (SE)": (FEATURE_NAMES[10:20], defaults[10:20]),
+    "🔴 Pires valeurs (worst)": (FEATURE_NAMES[20:30], defaults[20:30]),
 }
 
-if mode == "Exemple prédéfini":
-    defaults = EXAMPLE_BENIGN if "bénin" in example.lower() else EXAMPLE_MALIGNANT
-else:
-    defaults = [0.0]*30
-
 input_values = []
-for group_name, group_features in groups.items():
-    with st.expander(group_name, expanded=(group_name=="🔵 Moyennes (mean)")):
+for group_name, (group_features, group_defaults) in groups.items():
+    with st.expander(group_name, expanded=(group_name == "🔵 Moyennes (mean)")):
         cols = st.columns(2)
-        for j, feat in enumerate(group_features):
-            idx = FEATURE_NAMES.index(feat)
-            val = cols[j%2].number_input(feat, value=float(defaults[idx]), format="%.5f", key=f"f_{idx}")
-            input_values.append((idx, val))
+        for j, (feat, default_val) in enumerate(zip(group_features, group_defaults)):
+            val = cols[j % 2].number_input(
+                feat, value=float(default_val), format="%.5f", key=f"f_{feat}"
+            )
+            input_values.append(val)
 
-input_ordered = [v for _,v in sorted(input_values)]
-X_input = np.array(input_ordered).reshape(1,-1)
+X_input = np.array(input_values).reshape(1, -1)
 
 st.divider()
 if st.button("🔍 Prédire", type="primary"):
